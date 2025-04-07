@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title text-center mb-4">Register as Buyer</h3>
+                    
+                    <form method="POST" class="auth-form" id="buyerRegisterForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="user_type" value="buyer">
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" class="form-control" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" name="password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Confirm Password</label>
+                            <input type="password" class="form-control" name="confirm_password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 mb-3">Register as Buyer</button>
+                        <a href="{{ url_for('google.login') }}" class="btn btn-danger w-100">Sign in with Google</a>
+                    </form>
+                    
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('auth.login') }}">Already have an account? Login</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/validators.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registerForm');
+    const usernameInput = document.getElementById('username');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Real-time validation
+    usernameInput.addEventListener('input', () => validateField(usernameInput, 'username'));
+    emailInput.addEventListener('input', () => validateField(emailInput, 'email'));
+    passwordInput.addEventListener('input', () => validateField(passwordInput, 'password'));
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        const isUsernameValid = validateField(usernameInput, 'username');
+        const isEmailValid = validateField(emailInput, 'email');
+        const isPasswordValid = validateField(passwordInput, 'password');
+        
+        if (!isUsernameValid || !isEmailValid || !isPasswordValid) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - {{ current_user.username }}{% endblock %}
+
+{% block head %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ config.GOOGLE_MAPS_API_KEY }}&libraries=places"></script>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="row">
+        <!-- Profile Section -->
+        <div class="col-md-4">
+            <div class="profile-card">
+                <div class="profile-header">
+                    <i class="fas fa-user-circle profile-icon"></i>
+                    <h3>{{ current_user.username }}</h3>
+                    <p class="text-muted">{{ current_user.email }}</p>
+                </div>
+                <div class="profile-info">
+                    <p><i class="fas fa-phone"></i> {{ current_user.phone_number or 'Not set' }}</p>
+                    <p><i class="fas fa-map-marker-alt"></i> {{ current_user.city or 'Not set' }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Profile Section -->
+        <div class="col-md-8">
+            <div class="content-card">
+                <h4>Edit Profile</h4>
+                <form method="POST" action="{{ url_for('user.update_profile') }}" class="profile-form" id="profileForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-group">
+                                <label class="form-label">Phone Number</label>
+                                <input type="tel" name="phone_number" class="form-control" id="phoneNumber"
+                                       value="{{ current_user.phone_number or '' }}">
+                                <div class="feedback-text text-danger small"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-group">
+                                <label class="form-label">Address</label>
+                                <input type="text" name="address" class="form-control" 
+                                       value="{{ current_user.address or '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-group">
+                                <label class="form-label">City</label>
+                                <input type="text" name="city" class="form-control" 
+                                       value="{{ current_user.city or '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-group">
+                                <label class="form-label">State</label>
+                                <select name="state" class="form-control">
+                                    <option value="">Select State</option>
+                                    {% for state in states %}
+                                        <option value="{{ state }}" {% if current_user.state == state %}selected{% endif %}>
+                                            {{ state }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-group">
+                                <label class="form-label">PIN Code</label>
+                                <input type="text" name="zip_code" class="form-control" id="pinCode"
+                                       value="{{ current_user.zip_code or '' }}">
+                                <div class="feedback-text text-danger small"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="mt-4">Property Preferences</h5>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="form-group">
+                                <label class="form-label">Preferred Property Type</label>
+                                <select name="preferred_property_type" class="form-control">
+                                    <option value="">Select Type</option>
+                                    <option value="house" {% if current_user.preferred_property_type == 'house' %}selected{% endif %}>House</option>
+                                    <option value="apartment" {% if current_user.preferred_property_type == 'apartment' %}selected{% endif %}>Apartment</option>
+                                    <option value="plot" {% if current_user.preferred_property_type == 'plot' %}selected{% endif %}>Plot</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-group">
+                                <label class="form-label">Search Radius (km)</label>
+                                <input type="number" 
+                                       class="form-control" 
+                                       name="preferred_proximity" 
+                                       value="{{ current_user.preferred_proximity or 10 }}"
+                                       min="1" 
+                                       max="50"
+                                       step="0.5">
+                                <div class="form-text small">Set your preferred search radius (1-50 km)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-group">
+                                <label class="form-label">Preferred Location</label>
+                                <input type="text" id="locationSearch" class="form-control" 
+                                       placeholder="Search for a location"
+                                       value="{{ current_user.preferred_location or '' }}">
+                                <input type="hidden" name="preferred_location" id="preferred_location" 
+                                       value="{{ current_user.preferred_location or '' }}">
+                                <input type="hidden" name="latitude" id="latitude" 
+                                       value="{{ current_user.preferred_latitude or '' }}">
+                                <input type="hidden" name="longitude" id="longitude" 
+                                       value="{{ current_user.preferred_longitude or '' }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div id="map" style="height: 400px; width: 100%; margin-top: 10px; border-radius: 8px; border: 1px solid #ddd;"></div>
+                        </div>
+                    </div>
+
+                    <div class="text-end mt-3">
+                        <button type="submit" class="btn btn-primary" id="submitBtn">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interests Section -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">My Property Interests</h5>
+                    <!-- Debug info -->
+                    <small class="text-muted">Debug: {{ interests|length }} interests found</small>
+                </div>
+                <div class="card-body">
+                    {% if interests %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Property</th>
+                                    <th>Location</th>
+                                    <th>Price</th>
+                                    <th>Shown Interest On</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for interest in interests %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('property.details', id=interest.property_id) }}">
+                                            {{ interest.property.title }}
+                                        </a>
+                                    </td>
+                                    <td>{{ interest.property.location }}</td>
+                                    <td><i class="fas fa-rupee-sign"></i> {{ "{:,.2f}".format(interest.property.price) }}</td>
+                                    <td>{{ interest.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <a href="{{ url_for('chat.property_chat', property_id=interest.property_id, other_user_id=interest.property.user_id) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-comments"></i> Chat
+                                        </a>
+                                        <button onclick="confirmRemoveInterest({{ interest.property_id }})" 
+                                                class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-times"></i> Remove Interest
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">You haven't shown interest in any properties yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add this in the dashboard sidebar or navigation section -->
+<div class="list-group mb-4">
+    <a href="{{ url_for('user.dashboard') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'user.dashboard' %}active{% endif %}">
+        <i class="fas fa-tachometer-alt"></i> Dashboard
+    </a>
+    <a href="{{ url_for('user.wishlist') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'user.wishlist' %}active{% endif %}">
+        <i class="fas fa-bookmark"></i> Wishlist
+    </a>
+    <a href="{{ url_for('user.interests') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'user.interests' %}active{% endif %}">
+        <i class="fas fa-heart"></i> My Interests
+    </a>
+    <a href="{{ url_for('user.profile') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'user.profile' %}active{% endif %}">
+        <i class="fas fa-user-cog"></i> Profile Settings
+    </a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/validators.js') }}"></script>
+<script src="{{ url_for('static', filename='js/maps.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('profileForm');
+    const phoneInput = document.getElementById('phoneNumber');
+    const pincodeInput = document.getElementById('pinCode');
+    
+    // Real-time validation
+    phoneInput.addEventListener('input', () => validateField(phoneInput, 'phone'));
+    pincodeInput.addEventListener('input', () => validateField(pincodeInput, 'pincode'));
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        const isPhoneValid = !phoneInput.value || validateField(phoneInput, 'phone');
+        const isPincodeValid = !pincodeInput.value || validateField(pincodeInput, 'pincode');
+        
+        if (!isPhoneValid || !isPincodeValid) {
+            e.preventDefault();
+        }
+    });
+});
+
+function confirmRemoveInterest(propertyId) {
+    if (confirm('Are you sure you want to remove your interest in this property? This will also delete all chat history with the seller.')) {
+        window.location.href = "{{ url_for('property.remove_my_interest', property_id=0) }}".replace('0', propertyId);
+    }
+}
+</script>
+{% endblock %} 

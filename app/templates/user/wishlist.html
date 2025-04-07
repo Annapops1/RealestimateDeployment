@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}My Wishlist{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">My Wishlist</h2>
+    
+    {% if wishlist_items %}
+    <div class="row">
+        {% for item in wishlist_items %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <img src="{{ item.property.image_url or url_for('static', filename='images/default-property.jpg') }}" 
+                     class="card-img-top property-image" alt="{{ item.property.title }}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ item.property.title }}</h5>
+                    <p class="text-muted mb-2">
+                        <i class="fas fa-map-marker-alt"></i> {{ item.property.location }}
+                    </p>
+                    <div class="property-features mb-3">
+                        {% if item.property.bedrooms %}
+                        <span class="me-3"><i class="fas fa-bed"></i> {{ item.property.bedrooms }} Beds</span>
+                        {% endif %}
+                        {% if item.property.bathrooms %}
+                        <span class="me-3"><i class="fas fa-bath"></i> {{ item.property.bathrooms }} Baths</span>
+                        {% endif %}
+                    </div>
+                    <h5 class="text-primary mb-3">
+                        <i class="fas fa-rupee-sign"></i> {{ "{:,.2f}".format(item.property.price) }}
+                    </h5>
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('property.details', id=item.property.id) }}" 
+                           class="btn btn-outline-primary">View Details</a>
+                        <a href="{{ url_for('user.remove_from_wishlist', property_id=item.property.id) }}" 
+                           class="btn btn-outline-danger">Remove</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <p class="text-muted">Your wishlist is empty.</p>
+        <a href="{{ url_for('property.listings') }}" class="btn btn-primary">
+            Browse Properties
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

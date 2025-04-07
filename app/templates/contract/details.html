@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Contract Details{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card shadow">
+        <div class="card-body">
+            <h3 class="card-title">Contract for {{ contract.property.title }}</h3>
+            
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <h5>Contract Details</h5>
+                    <p><strong>Price:</strong> ₹{{ "{:,.2f}".format(contract.price) }}</p>
+                    <p><strong>Advance Payment:</strong> ₹{{ "{:,.2f}".format(contract.advance_payment) }}</p>
+                    <p><strong>Payment Deadline:</strong> {{ contract.payment_deadline.strftime('%Y-%m-%d') }}</p>
+                </div>
+                
+                <div class="col-md-6">
+                    <h5>Status</h5>
+                    <p><strong>Seller Accepted:</strong> {{ "Yes" if contract.seller_accepted else "No" }}</p>
+                    <p><strong>Buyer Accepted:</strong> {{ "Yes" if contract.buyer_accepted else "No" }}</p>
+                    <p><strong>Advance Payment:</strong> {{ "Paid" if contract.advance_payment_made else "Pending" }}</p>
+                    <p><strong>Status:</strong> {{ contract.status.title() }}</p>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <h5>Contract Terms</h5>
+                <div class="contract-terms p-3 bg-light rounded">
+                    {% for line in contract.terms.split('\n') %}
+                        <p class="mb-2">{{ line }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            {% if current_user.id == contract.buyer_id %}
+                {% if not contract.buyer_accepted %}
+                    <div class="text-center mt-4">
+                        <a href="{{ url_for('contract.accept', contract_id=contract.id) }}" 
+                           class="btn btn-success btn-lg">
+                            Accept Contract
+                        </a>
+                    </div>
+                {% elif not contract.advance_payment_made %}
+                    <div class="text-center mt-4">
+                        <button id="payButton" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#paymentModal">
+                            Pay Advance Amount (₹{{ "{:,.2f}".format(contract.advance_payment) }})
+                        </button>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentModalLabel">Advance Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <h6>Contract #{{ contract.id }}</h6>
+                    <p class="mb-3">Property: {{ contract.property.title }}</p>
+                    <p class="mb-4">Amount: ₹{{ "{:,.2f}".format(contract.advance_payment) }}</p>
+                    <div id="razorpay-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+{% if current_user.id == contract.buyer_id and not contract.advance_payment_made and contract.buyer_accepted %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+const payButton = document.getElementById('payButton');
+let rzp = null;
+
+// Get CSRF token from meta tag
+const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+if (payButton) {
+    payButton.addEventListener('click', async function() {
+        try {
+            const response = await fetch('/payment/create-order/{{ contract.id }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({})
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Payment initialization failed');
+            }
+            
+            const options = {
+                key: data.key,
+                amount: data.amount,
+                currency: data.currency,
+                order_id: data.order_id,
+                name: "Property Advance Payment",
+                description: "Contract #{{ contract.id }} - {{ contract.property.title }}",
+                handler: function(response) {
+                    verifyPayment(response);
+                },
+                prefill: {
+                    name: "{{ current_user.username }}",
+                    email: "{{ current_user.email }}",
+                    contact: "{{ current_user.phone_number }}"
+                },
+                theme: {
+                    color: "#3399cc"
+                }
+            };
+            
+            rzp = new Razorpay(options);
+            rzp.open();
+            
+        } catch (error) {
+            console.error('Payment error:', error);
+            alert(error.message || 'Error processing payment. Please try again.');
+        }
+    });
+}
+
+async function verifyPayment(response) {
+    try {
+        const verifyResponse = await fetch('/payment/verify', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+                contract_id: {{ contract.id }}
+            })
+        });
+        
+        const data = await verifyResponse.json();
+        
+        if (data.status === 'success') {
+            window.location.reload();
+        } else {
+            throw new Error(data.error || 'Payment verification failed');
+        }
+    } catch (error) {
+        console.error('Verification error:', error);
+        alert('Payment verification failed. Please contact support.');
+    }
+}
+</script>
+{% endif %}
+{% endblock %}

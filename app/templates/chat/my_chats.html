@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}My Interests{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">My Property Interests</h2>
+    
+    {% if chat_data %}
+    <div class="row">
+        {% for data in chat_data %}
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="{{ data.property.image_url or url_for('static', filename='images/default-property.jpg') }}" 
+                             class="rounded me-3" style="width: 80px; height: 60px; object-fit: cover;" 
+                             alt="{{ data.property.title }}">
+                        <div>
+                            <h5 class="card-title mb-1">{{ data.property.title }}</h5>
+                            <p class="text-muted mb-0">
+                                <small><i class="fas fa-user"></i> Seller: {{ data.seller.username }}</small>
+                            </p>
+                            <p class="text-muted mb-0">
+                                <small><i class="fas fa-clock"></i> Interest shown: {{ data.interest_date.strftime('%Y-%m-%d') }}</small>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        {% if data.chat %}
+                            <span class="text-muted">
+                                <small>Last message: {{ data.last_message_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </span>
+                        {% else %}
+                            <span class="text-muted">
+                                <small>No messages yet</small>
+                            </span>
+                        {% endif %}
+                        <a href="{{ url_for('chat.property_chat', property_id=data.property.id, other_user_id=data.seller.id) }}" 
+                           class="btn btn-primary">
+                            <i class="fas fa-comments"></i> {{ 'Open Chat' if data.chat else 'Start Chat' }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> You haven't shown interest in any properties yet. 
+        Browse properties and show interest to start chatting with sellers!
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

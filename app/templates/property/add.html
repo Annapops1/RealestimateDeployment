@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+
+{% block title %}Add New Property{% endblock %}
+
+{% block head %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ config.GOOGLE_MAPS_API_KEY }}&libraries=places"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">Add New Property</h3>
+                    <form method="POST" id="propertyForm" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <!-- Basic Information -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Property Title*</label>
+                                    <input type="text" name="title" id="title" class="form-control" required>
+                                    <div class="invalid-feedback" id="titleError" style="display: none;"></div>
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Property Type*</label>
+                                    <select name="property_type" id="propertyType" class="form-control" required>
+                                        <option value="">Select Type</option>
+                                        <option value="house">House</option>
+                                        <option value="apartment">Apartment</option>
+                                        <option value="plot">Plot</option>
+                                    </select>
+                                    <div class="invalid-feedback" id="propertyTypeError" style="display: none;"></div>
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Price (₹)*</label>
+                                    <input type="number" name="price" id="price" class="form-control" required 
+                                           min="100000" step="1000">
+                                    <div class="invalid-feedback" id="priceError" style="display: none;"></div>
+                                    <small class="text-muted">Minimum price: ₹1,00,000</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Description*</label>
+                                    <textarea name="description" id="description" class="form-control" rows="5" required></textarea>
+                                    <div class="invalid-feedback" id="descriptionError"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Location Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5>Location Details</h5>
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Location*</label>
+                                    <input type="text" id="locationSearch" class="form-control" 
+                                           placeholder="Search for a location" required>
+                                    <input type="hidden" name="location" id="location">
+                                    <input type="hidden" name="latitude" id="latitude">
+                                    <input type="hidden" name="longitude" id="longitude">
+                                </div>
+                                <div id="map" style="height: 400px; width: 100%; margin: 15px 0; border-radius: 8px; border: 1px solid #ddd;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Property Details -->
+                        <div class="row mb-4">
+                            <h5>Property Details</h5>
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Area (sq ft)*</label>
+                                    <input type="number" name="area" id="area" class="form-control" required min="100">
+                                    <div class="invalid-feedback" id="areaError" style="display: none;"></div>
+                                    <small class="text-muted">Minimum area: 100 sq ft</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Bedrooms</label>
+                                    <input type="number" name="bedrooms" id="bedrooms" class="form-control" min="1">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Bathrooms</label>
+                                    <input type="number" name="bathrooms" id="bathrooms" class="form-control" min="1">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Total Floors*</label>
+                                    <input type="number" name="total_floors" id="total_floors" class="form-control"  min="1">
+                                    <div class="invalid-feedback" id="total_floorsError" style="display: none;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Add this inside the form, after the basic information section -->
+                        <div class="mb-3">
+                            <label for="property_images" class="form-label">Property Images</label>
+                            <input type="file" class="form-control" id="property_images" name="property_images" multiple accept="image/*" required>
+                            <div class="form-text">Upload multiple images of your property. The first image will be the primary image.</div>
+                        </div>
+
+                        <!-- Add this after the property images section -->
+                        <div class="mb-4">
+                            <h4>Property Documents</h4>
+                            <p class="text-muted">Upload valid property documents for verification (tax documents, title deeds, etc.)</p>
+                            
+                            <div class="mb-3">
+                                <label for="document_type" class="form-label">Document Type*</label>
+                                <select class="form-select" id="document_type" name="document_type" required>
+                                    <option value="">Select document type</option>
+                                    <option value="tax">Tax Document</option>
+                                    <option value="deed">Property Deed</option>
+                                    <option value="title">Title Document</option>
+                                    <option value="other">Other Document</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="property_document" class="form-label">Upload Document*</label>
+                                <input type="file" class="form-control" id="property_document" name="property_document" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required>
+                                <div class="form-text">Accepted formats: PDF, DOC, DOCX, JPG, JPEG, PNG</div>
+                            </div>
+                        </div>
+
+                        <div class="text-end">
+                            <a href="{{ url_for('user.seller_dashboard') }}" class="btn btn-secondary me-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn" disabled>Add Property</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+let map;
+let marker;
+let autocomplete;
+
+function initMap() {
+    const defaultLocation = { lat: 20.5937, lng: 78.9629 }; // India's center
+    
+    map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 5,
+        center: defaultLocation,
+        mapTypeControl: true,
+        streetViewControl: true,
+        fullscreenControl: true
+    });
+
+    // Initialize the autocomplete
+    autocomplete = new google.maps.places.Autocomplete(
+        document.getElementById("locationSearch"),
+        { 
+            componentRestrictions: { country: "in" },
+            fields: ["formatted_address", "geometry"]
+        }
+    );
+
+    // Add marker when location is selected
+    autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
+        if (!place.geometry) return;
+
+        updateLocation(place.geometry.location, place.formatted_address);
+        map.setCenter(place.geometry.location);
+        map.setZoom(15);
+    });
+
+    // Allow clicking on map to set location
+    map.addListener("click", (e) => {
+        updateLocation(e.latLng);
+    });
+}
+
+function updateLocation(latLng, address = null) {
+    if (marker) marker.setMap(null);
+    
+    marker = new google.maps.Marker({
+        position: latLng,
+        map: map,
+        draggable: true
+    });
+
+    marker.addListener('dragend', function(e) {
+        updateLocation(e.latLng);
+    });
+
+    // Reverse geocode if address not provided
+    if (!address) {
+        const geocoder = new google.maps.Geocoder();
+        geocoder.geocode({ location: latLng }, (results, status) => {
+            if (status === "OK" && results[0]) {
+                document.getElementById("locationSearch").value = results[0].formatted_address;
+                document.getElementById("location").value = results[0].formatted_address;
+            }
+        });
+    } else {
+        document.getElementById("locationSearch").value = address;
+        document.getElementById("location").value = address;
+    }
+
+    document.getElementById("latitude").value = latLng.lat();
+    document.getElementById("longitude").value = latLng.lng();
+}
+
+document.addEventListener("DOMContentLoaded", initMap);
+
+$(document).ready(function() {
+    const formFields = {
+        title: { touched: false },
+        propertyType: { touched: false },
+        price: { touched: false },
+        description: { touched: false },
+        location: { touched: false },
+        area: { touched: false },
+        total_floors: { touched: false }
+    };
+
+    function validateField(fieldId) {
+        const field = $(`#${fieldId}`);
+        const error = $(`#${fieldId}Error`);
+        let isValid = true;
+
+        if (!formFields[fieldId].touched) {
+            return true;
+        }
+
+        switch(fieldId) {
+            case 'title':
+                if (!field.val().trim()) {
+                    error.text('Property title is required').show();
+                    field.addClass('is-invalid');
+                    isValid = false;
+                } else {
+                    error.hide();
+                    field.removeClass('is-invalid');
+                }
+                break;
+
+            case 'propertyType':
+                if (!field.val()) {
+                    error.text('Please select a property type').show();
+                    field.addClass('is-invalid');
+                    isValid = false;
+                } else {
+                    error.hide();
+                    field.removeClass('is-invalid');
+                }
+                break;
+
+            case 'price':
+                const price = parseFloat(field.val());
+                if (!price || price < 100000) {
+                    error.text('Minimum price should be ₹1,00,000').show();
+                    field.addClass('is-invalid');
+                    isValid = false;
+                } else {
+                    error.hide();
+                    field.removeClass('is-invalid');
+                }
+                break;
+
+            case 'description':
+                if (!field.val().trim()) {
+                    error.text('Property description is required').show();
+                    field.addClass('is-invalid');
+                    isValid = false;
+                } else {
+                    error.hide();
+                    field.removeClass('is-invalid');
+                }
+                break;
+
+            case 'area':
+                const area = parseFloat(field.val());
+                if (!area || area < 100) {
+                    error.text('Minimum area should be 100 sq ft').show();
+                    field.addClass('is-invalid');
+                    isValid = false;
+                } else {
+                    error.hide();
+                    field.removeClass('is-invalid');
+                }
+                break;
+
+            case 'total_floors':
+                const floors = parseInt(field.val());
+                if (!floors || floors < 1) {
+                    error.text('Number of floors must be at least 1').show();
+                    field.addClass('is-invalid');
+                    isValid = false;
+                } else {
+                    error.hide();
+                    field.removeClass('is-invalid');
+                }
+                break;
+        }
+        return isValid;
+    }
+
+    function validateForm() {
+        let isValid = true;
+        Object.keys(formFields).forEach(fieldId => {
+            if (!validateField(fieldId)) {
+                isValid = false;
+            }
+        });
+        $('#submitBtn').prop('disabled', !isValid);
+    }
+
+    // Mark field as touched on first interaction
+    $('#propertyForm input, #propertyForm select, #propertyForm textarea').on('input change', function() {
+        const fieldId = $(this).attr('id');
+        if (formFields[fieldId]) {
+            formFields[fieldId].touched = true;
+            validateField(fieldId);
+            validateForm();
+        }
+    });
+
+    // Initial state - hide all errors
+    Object.keys(formFields).forEach(fieldId => {
+        $(`#${fieldId}Error`).hide();
+    });
+});
+</script>
+{% endblock %} 

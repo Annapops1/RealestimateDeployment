@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Property Interests{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Property Interests</h2>
+    
+    {% if interests %}
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Interested Buyer</th>
+                            <th>Message</th>
+                            <th>Contact</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for interest in interests %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('property.details', id=interest.property.id) }}">
+                                    {{ interest.property.title }}
+                                </a>
+                            </td>
+                            <td>{{ interest.buyer.username }}</td>
+                            <td>{{ interest.message or 'No message' }}</td>
+                            <td>
+                                {% if interest.buyer.email %}
+                                <a href="mailto:{{ interest.buyer.email }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-envelope"></i> Email
+                                </a>
+                                {% endif %}
+                                {% if interest.buyer.phone_number %}
+                                <a href="tel:{{ interest.buyer.phone_number }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-phone"></i> Call
+                                </a>
+                                {% endif %}
+                                <a href="{{ url_for('chat.property_chat', property_id=interest.property.id, other_user_id=interest.buyer.id) }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-comments"></i> Chat
+                                </a>
+                                {% if interest.property.contracts %}
+                                    <a href="{{ url_for('contract.details', contract_id=interest.property.contracts[0].id) }}" 
+                                       class="btn btn-sm btn-primary">
+                                        <i class="fas fa-file-contract"></i> View Contract
+                                    </a>
+                                {% else %}
+                                    <a href="{{ url_for('contract.create', property_id=interest.property.id, buyer_id=interest.buyer.id) }}" 
+                                       class="btn btn-sm btn-success">
+                                        <i class="fas fa-file-contract"></i> Create Contract
+                                    </a>
+                                {% endif %}
+                            </td>
+                            <td>{{ interest.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        No interests shown in your properties yet.
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

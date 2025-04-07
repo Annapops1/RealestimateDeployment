@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+
+{% block title %}Chat - {{ chat.property.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <!-- Property details sidebar -->
+        <div class="col-md-4">
+            <div class="card mb-4 sticky-top" style="top: 1rem;">
+                <div class="card-body">
+                    <h5 class="card-title">Property Details</h5>
+                    <img src="{{ chat.property.image_url or url_for('static', filename='images/default-property.jpg') }}" 
+                         class="img-fluid mb-3 rounded" alt="{{ chat.property.title }}">
+                    <h6>{{ chat.property.title }}</h6>
+                    <p class="text-muted">
+                        <i class="fas fa-map-marker-alt"></i> {{ chat.property.location }}
+                    </p>
+                    <p class="text-primary">
+                        <i class="fas fa-rupee-sign"></i> {{ "{:,.2f}".format(chat.property.price) }}
+                    </p>
+                    <hr>
+                    <h6 class="mb-3">Chatting with</h6>
+                    <div class="d-flex align-items-center">
+                        <div class="user-avatar me-2">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <p class="mb-0">
+                                {% if current_user.user_type == 'buyer' %}
+                                    {{ chat.seller.username }}
+                                {% else %}
+                                    {{ chat.buyer.username }}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    {% if contract %}
+                        <hr>
+                        <div class="contract-actions">
+                            <h6 class="mb-3">Contract Status</h6>
+                            <p class="mb-2">
+                                <small>Seller: {{ "Accepted" if contract.seller_accepted else "Pending" }}</small><br>
+                                <small>Buyer: {{ "Accepted" if contract.buyer_accepted else "Pending" }}</small>
+                            </p>
+                            {% if current_user.user_type == 'buyer' %}
+                                <a href="{{ url_for('contract.details', contract_id=contract.id) }}" 
+                                   class="btn btn-primary btn-sm w-100 mb-2">
+                                    <i class="fas fa-file-contract"></i> View Contract
+                                </a>
+                                {% if not contract.buyer_accepted %}
+                                    <a href="{{ url_for('contract.accept', contract_id=contract.id) }}" 
+                                       class="btn btn-success btn-sm w-100">
+                                        <i class="fas fa-check"></i> Accept Contract
+                                    </a>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    {% elif current_user.user_type == 'buyer' %}
+                        <hr>
+                        <div class="contract-actions">
+                            <h6 class="mb-3">Contract Status</h6>
+                            <p class="text-muted mb-0">
+                                <small>Waiting for seller to create contract</small>
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chat area -->
+        <!-- Chat area -->
+<div class="col-md-8">
+    <div class="card property-chat">
+        <div class="card-header bg-success text-white py-3">
+            <h5 class="mb-0">Messages</h5>
+        </div>
+        <div class="card-body chat-messages" id="chatMessages">
+            <!-- Messages will be loaded here -->
+        </div>
+        <div class="card-footer">
+            <div class="file-upload-area" id="fileUploadArea" style="display: none;">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p class="mb-0">Drag and drop files here or click to select</p>
+                <small class="text-muted">Maximum file size: 5MB</small>
+                <div id="filePreview" class="mt-2"></div>
+            </div>
+
+            <form id="messageForm" class="message-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="button" class="btn btn-outline-secondary btn-attach" id="attachButton">
+                    <i class="fas fa-paperclip"></i>
+                    <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" multiple>
+                </button>
+                <input type="text" class="form-control" id="messageInput" placeholder="Type your message...">
+                <button class="btn btn-success btn-send" type="submit">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const chatId = {{ chat.id }};
+    const currentUserId = {{ current_user.id }};
+    const maxFileSize = 5 * 1024 * 1024; // 5MB
+</script>
+<script src="{{ url_for('static', filename='js/property_chat.js') }}"></script>
+{% endblock %} 

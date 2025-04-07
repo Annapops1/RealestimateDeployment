@@ -1,0 +1,19 @@
+<div class="card-body chat-messages" id="chatMessages">
+    {% for message in current_chat.messages %}
+    <div class="message {% if message.sender_id == current_user.id %}sent{% else %}received{% endif %}">
+        <div class="message-content">
+            {{ message.message }}
+            {% if message.attachments %}
+            <div class="attachments">
+                {% for attachment in message.attachments %}
+                <a href="{{ url_for('chat.download_attachment', attachment_id=attachment.id) }}" class="attachment-link">
+                    <i class="fas fa-file"></i> {{ attachment.filename }}
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        <small class="message-time">{{ message.timestamp.strftime('%H:%M') }}</small>
+    </div>
+    {% endfor %}
+</div> 

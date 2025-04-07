@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Property Listings{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <!-- Filters Sidebar -->
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Search Filters</h5>
+                    <form method="GET" action="{{ url_for('property.listings') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <label class="form-label">Property Type</label>
+                            <select name="property_type" class="form-select">
+                                <option value="">All Types</option>
+                                <option value="house" {% if request.args.get('property_type') == 'house' %}selected{% endif %}>House</option>
+                                <option value="apartment" {% if request.args.get('property_type') == 'apartment' %}selected{% endif %}>Apartment</option>
+                                <option value="plot" {% if request.args.get('property_type') == 'plot' %}selected{% endif %}>Plot</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Location</label>
+                            <input type="text" name="location" class="form-control" 
+                                   value="{{ request.args.get('location', '') }}"
+                                   placeholder="Enter location">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Price Range</label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <input type="number" name="min_price" class="form-control" 
+                                           placeholder="Min" value="{{ request.args.get('min_price', '') }}">
+                                </div>
+                                <div class="col-6">
+                                    <input type="number" name="max_price" class="form-control" 
+                                           placeholder="Max" value="{{ request.args.get('max_price', '') }}">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Minimum Bedrooms</label>
+                            <select name="bedrooms" class="form-select">
+                                <option value="">Any</option>
+                                {% for i in range(1, 6) %}
+                                <option value="{{ i }}" {% if request.args.get('bedrooms')|int == i %}selected{% endif %}>
+                                    {{ i }}+
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Apply Filters</button>
+                            <a href="{{ url_for('property.listings') }}" class="btn btn-outline-secondary mt-2">Clear Filters</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Property Listings -->
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4>Available Properties</h4>
+                <div class="btn-group">
+                    <button class="btn btn-outline-primary btn-sm" onclick="toggleView('grid')">
+                        <i class="fas fa-th-large"></i>
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm" onclick="toggleView('list')">
+                        <i class="fas fa-list"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="row" id="propertiesGrid">
+                {% for property in properties %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 shadow-sm property-card">
+                        {% if property.get_primary_image() %}
+                            <img src="{{ property.get_primary_image().url }}" 
+                                 class="card-img-top property-image" alt="{{ property.title }}">
+                        {% else %}
+                            <img src="{{ url_for('static', filename='images/default-property.jpg') }}" 
+                                 class="card-img-top property-image" alt="{{ property.title }}">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ property.title }}</h5>
+                            <p class="text-muted mb-2">
+                                <i class="fas fa-map-marker-alt"></i> {{ property.location }}
+                            </p>
+                            <div class="property-features mb-3">
+                                {% if property.bedrooms %}
+                                <span class="me-3"><i class="fas fa-bed"></i> {{ property.bedrooms }} Beds</span>
+                                {% endif %}
+                                {% if property.bathrooms %}
+                                <span class="me-3"><i class="fas fa-bath"></i> {{ property.bathrooms }} Baths</span>
+                                {% endif %}
+                                <span><i class="fas fa-ruler-combined"></i> {{ property.area }} sq.ft.</span>
+                            </div>
+                            <p class="card-text">{{ property.description[:100] }}{% if property.description|length > 100 %}...{% endif %}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="text-primary mb-0"><i class="fas fa-rupee-sign"></i> {{ "{:,.2f}".format(property.price) }}</h5>
+                                <a href="{{ url_for('property.details', id=property.id) }}" 
+                                   class="btn btn-outline-primary">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% if not properties %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> No properties found matching your criteria.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleView(type) {
+    const grid = document.getElementById('propertiesGrid');
+    if (type === 'list') {
+        grid.classList.remove('row');
+        grid.classList.add('list-view');
+        
+        // Adjust card layout for list view
+        const cards = document.querySelectorAll('.property-card');
+        cards.forEach(card => {
+            card.classList.add('list-card');
+        });
+    } else {
+        grid.classList.add('row');
+        grid.classList.remove('list-view');
+        
+        // Reset card layout for grid view
+        const cards = document.querySelectorAll('.property-card');
+        cards.forEach(card => {
+            card.classList.remove('list-card');
+        });
+    }
+}
+</script>
+
+<style>
+/* List view styles */
+.list-view .col-md-6 {
+    width: 100%;
+    max-width: 100%;
+    flex: 0 0 100%;
+}
+
+.list-view .property-card {
+    display: flex;
+    flex-direction: row;
+}
+
+.list-view .property-image {
+    width: 300px;
+    height: 200px;
+    object-fit: cover;
+}
+
+.list-view .card-body {
+    flex: 1;
+}
+
+/* Property card hover effect */
+.property-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.property-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+
+.property-image {
+    height: 200px;
+    object-fit: cover;
+}
+</style>
+{% endblock %} 

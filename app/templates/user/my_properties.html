@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}My Properties{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">My Properties</h2>
+
+    <!-- Properties with Advance Payment Made -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="h5 mb-0">My Properties</h3>
+        </div>
+        <div class="card-body">
+            {% if purchased_properties %}
+                <div class="row">
+                    {% for contract in purchased_properties %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            {% if contract.property.images %}
+                            <img src="{{ url_for('static', filename='uploads/' + contract.property.images[0]) }}" 
+                                 class="card-img-top" alt="Property Image" style="height: 200px; object-fit: cover;">
+                            {% endif %}
+                            <div class="card-body">
+                                <h5 class="card-title">{{ contract.property.title }}</h5>
+                                <div class="payment-status mb-3">
+                                    {% if contract.full_payment_made %}
+                                        <span class="badge bg-success">Fully Paid</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Advance Paid</span>
+                                        {% if contract.payment_deadline < now %}
+                                            <span class="badge bg-danger">Deadline Passed</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                                <p class="card-text">
+                                    <strong>Total Price:</strong> ₹{{ "{:,.2f}".format(contract.price) }}<br>
+                                    <strong>Advance Paid:</strong> ₹{{ "{:,.2f}".format(contract.advance_payment) }}<br>
+                                    <strong>Balance:</strong> ₹{{ "{:,.2f}".format(contract.price - contract.advance_payment) }}<br>
+                                    <strong>Payment Deadline:</strong> {{ contract.payment_deadline.strftime('%Y-%m-%d') }}
+                                </p>
+                                {% if not contract.full_payment_made and contract.payment_deadline >= now %}
+                                    <button class="btn btn-primary" onclick="initiateFullPayment({{ contract.id }})">
+                                        Make Full Payment
+                                    </button>
+                                {% endif %}
+                                <a href="{{ url_for('contract.details', contract_id=contract.id) }}" 
+                                   class="btn btn-outline-primary">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted">No purchased properties yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Properties Pending Payment -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="h5 mb-0">Properties Pending Payment</h3>
+        </div>
+        <div class="card-body">
+            {% if pending_properties %}
+                <div class="row">
+                    {% for contract in pending_properties %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            {% if contract.property.images %}
+                            <img src="{{ url_for('static', filename='uploads/' + contract.property.images[0]) }}" 
+                                 class="card-img-top" alt="Property Image" style="height: 200px; object-fit: cover;">
+                            {% endif %}
+                            <div class="card-body">
+                                <h5 class="card-title">{{ contract.property.title }}</h5>
+                                <p class="card-text">
+                                    <strong>Price:</strong> ₹{{ "{:,.2f}".format(contract.price) }}<br>
+                                    <strong>Required Advance:</strong> ₹{{ "{:,.2f}".format(contract.advance_payment) }}<br>
+                                    <strong>Payment Deadline:</strong> {{ contract.payment_deadline.strftime('%Y-%m-%d') }}
+                                </p>
+                                <a href="{{ url_for('contract.details', contract_id=contract.id) }}" 
+                                   class="btn btn-primary">Make Payment</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted">No pending payments.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+async function initiateFullPayment(contractId) {
+    try {
+        const response = await fetch(`/payment/create-full-payment/${contractId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        });
+        
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error);
+        }
+
+        const options = {
+            key: data.key,
+            amount: data.amount,
+            currency: data.currency,
+            order_id: data.order_id,
+            name: "Property Full Payment",
+            description: `Contract #${contractId}`,
+            handler: function(response) {
+                verifyFullPayment(response);
+            },
+            prefill: {
+                name: "{{ current_user.username }}",
+                email: "{{ current_user.email }}",
+                contact: "{{ current_user.phone_number }}"
+            },
+            theme: {
+                color: "#3399cc"
+            }
+        };
+        
+        const rzp = new Razorpay(options);
+        rzp.open();
+        
+    } catch (error) {
+        console.error('Payment error:', error);
+        alert(error.message || 'Error processing payment');
+    }
+}
+
+async function verifyFullPayment(response) {
+    try {
+        const verifyResponse = await fetch('/payment/verify-full-payment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify(response)
+        });
+        
+        if (verifyResponse.ok) {
+            window.location.reload();
+        } else {
+            throw new Error('Payment verification failed');
+        }
+    } catch (error) {
+        console.error('Verification error:', error);
+        alert('Payment verification failed');
+    }
+}
+</script>
+{% endblock %}

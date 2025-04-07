@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title text-center mb-4">Welcome Back</h3>
+                    <form method="POST" class="auth-form" id="loginForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                            <div class="feedback-text text-danger small"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                            <div class="feedback-text text-danger small"></div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 mb-3" id="submitBtn">Sign In</button>
+                        <a href="{{ url_for('google.login') }}" class="btn btn-danger w-100">Sign in with Google</a>
+                        <div class="text-center mt-3">
+                            Don't have an account? 
+                            <a href="{{ url_for('auth.register') }}" class="auth-link">Register here</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/validators.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('loginForm');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Real-time validation
+    emailInput.addEventListener('input', () => validateField(emailInput, 'email'));
+    passwordInput.addEventListener('input', () => validateField(passwordInput, 'password'));
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        const isEmailValid = validateField(emailInput, 'email');
+        const isPasswordValid = validateField(passwordInput, 'password');
+        
+        if (!isEmailValid || !isPasswordValid) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %} 

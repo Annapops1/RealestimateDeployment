@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Admin Dashboard</h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Users</h5>
+                    <h2 class="card-text">{{ total_users }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Properties</h5>
+                    <h2 class="card-text">{{ total_properties }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Verified Properties</h5>
+                    <h2 class="card-text">{{ verified_properties }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5 class="card-title">Pending Verification</h5>
+                    <h2 class="card-text">{{ pending_properties }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">User Management</h5>
+                </div>
+                <div class="card-body">
+                    <p>Manage all users in the system. You can view, edit, and change user permissions.</p>
+                    <a href="{{ url_for('admin.manage_users') }}" class="btn btn-primary">
+                        <i class="fas fa-users"></i> Manage Users
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Property Management</h5>
+                </div>
+                <div class="card-body">
+                    <p>Manage all properties in the system. Verify new properties and monitor listings.</p>
+                    <a href="{{ url_for('admin.manage_properties') }}" class="btn btn-success">
+                        <i class="fas fa-home"></i> Manage Properties
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// User Distribution Chart
+const userCtx = document.getElementById('userChart').getContext('2d');
+new Chart(userCtx, {
+    type: 'pie',
+    data: {
+        labels: ['Sellers', 'Buyers'],
+        datasets: [{
+            data: [{{ total_sellers }}, {{ total_buyers }}],
+            backgroundColor: ['#28a745', '#007bff']
+        }]
+    }
+});
+
+// Property Types Chart
+const propertyCtx = document.getElementById('propertyTypeChart').getContext('2d');
+new Chart(propertyCtx, {
+    type: 'bar',
+    data: {
+        labels: [{% for type, count in property_types %}'{{ type }}',{% endfor %}],
+        datasets: [{
+            label: 'Number of Properties',
+            data: [{% for type, count in property_types %}{{ count }},{% endfor %}],
+            backgroundColor: '#52ab98'
+        }]
+    },
+    options: {
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+</script>
+{% endblock %} 

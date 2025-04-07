@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}{{ property.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div id="propertyImageCarousel" class="carousel slide mb-4" data-bs-ride="carousel">
+                    <div class="carousel-indicators">
+                        {% for image in property.images %}
+                        <button type="button" data-bs-target="#propertyImageCarousel" data-bs-slide-to="{{ loop.index0 }}" 
+                                {% if loop.first %}class="active"{% endif %}></button>
+                        {% endfor %}
+                    </div>
+                    <div class="carousel-inner">
+                        {% if property.images %}
+                            {% for image in property.images %}
+                            <div class="carousel-item {% if loop.first %}active{% endif %}">
+                                <img src="{{ image.url }}" class="d-block w-100" alt="Property Image">
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="carousel-item active">
+                                <img src="{{ url_for('static', filename='images/default-property.jpg') }}" class="d-block w-100" alt="Default Property Image">
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% if property.images|length > 1 %}
+                    <button class="carousel-control-prev" type="button" data-bs-target="#propertyImageCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#propertyImageCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <h2 class="card-title mb-3">{{ property.title }}</h2>
+                    <div class="property-meta mb-4">
+                        <span class="badge bg-primary me-2">{{ property.property_type|title }}</span>
+                        <span class="text-muted">
+                            <i class="fas fa-map-marker-alt"></i> {{ property.location }}
+                        </span>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="text-center">
+                                <i class="fas fa-ruler-combined fa-2x mb-2 text-primary"></i>
+                                <p class="mb-0">Area</p>
+                                <h5>{{ property.area }} {{ property.area_unit }}</h5>
+                            </div>
+                        </div>
+                        {% if property.bedrooms %}
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="text-center">
+                                <i class="fas fa-bed fa-2x mb-2 text-primary"></i>
+                                <p class="mb-0">Bedrooms</p>
+                                <h5>{{ property.bedrooms }}</h5>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if property.bathrooms %}
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="text-center">
+                                <i class="fas fa-bath fa-2x mb-2 text-primary"></i>
+                                <p class="mb-0">Bathrooms</p>
+                                <h5>{{ property.bathrooms }}</h5>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if property.total_floors %}
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="text-center">
+                                <i class="fas fa-building fa-2x mb-2 text-primary"></i>
+                                <p class="mb-0">Total Floors</p>
+                                <h5>{{ property.total_floors }}</h5>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>Area:</strong> {{ property.area }} sq.ft.
+                            {% if property.area %}
+                                <small class="text-muted d-block">
+                                    ({{ (property.area / 435.6)|round(2) }} cents)
+                                </small>
+                            {% endif %}
+                        </div>
+                        
+                        {% if property.area %}
+                        <div class="col-md-4">
+                            <strong>Price per sq.ft:</strong> ₹{{ "{:,.2f}".format(property.price / property.area) }}
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <strong>Price per cent:</strong> ₹{{ "{:,.2f}".format(property.price / (property.area / 435.6)) }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <h4 class="mb-3">Description</h4>
+                    <p class="card-text">{{ property.description }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h3 class="text-primary mb-3"><i class="fas fa-rupee-sign"></i> {{ "{:,.2f}".format(property.price) }}</h3>
+                    <hr>
+                    <h5 class="mb-3">Contact Owner</h5>
+                    <p><i class="fas fa-user me-2"></i>{{ property.owner.username }}</p>
+                    {% if property.owner.phone_number %}
+                    <p><i class="fas fa-phone me-2"></i>{{ property.owner.phone_number }}</p>
+                    {% endif %}
+                    {% if property.owner.email %}
+                    <p><i class="fas fa-envelope me-2"></i>{{ property.owner.email }}</p>
+                    {% endif %}
+                    
+                    <div class="d-grid gap-2">
+                        {% if current_user.is_authenticated and current_user.user_type == 'buyer' %}
+                            {% if property.has_user_interest(current_user.id) %}
+                                <button class="btn btn-success w-100" disabled>
+                                    <i class="fas fa-check"></i> Interest Shown
+                                </button>
+                            {% else %}
+                                <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#interestModal">
+                                    <i class="fas fa-hand-paper"></i> Show Interest
+                                </button>
+                            {% endif %}
+                            
+                            {% if property.id in current_user.wishlisted_properties|map(attribute='id')|list %}
+                                <a href="{{ url_for('user.remove_from_wishlist', property_id=property.id) }}"
+                                    class="btn btn-outline-danger">
+                                    <i class="fas fa-heart"></i> Remove from Wishlist
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('user.add_to_wishlist', property_id=property.id) }}"
+                                    class="btn btn-outline-primary">
+                                    <i class="far fa-heart"></i> Add to Wishlist
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {% if property.latitude and property.longitude %}
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="mb-3">Location</h5>
+                    <div id="map" style="height: 300px;"></div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if current_user.is_authenticated and current_user.user_type == 'buyer' %}
+<div class="modal fade" id="interestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('property.show_interest', id=property.id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Show Interest in Property</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="message" class="form-label">Message to Seller (Optional)</label>
+                        <textarea class="form-control" id="message" name="message" rows="4" 
+                                placeholder="Tell the seller why you're interested in this property..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-success">Send Interest</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if property.contracts %}
+    <div class="alert alert-warning">
+        <i class="fas fa-exclamation-triangle"></i> This property is currently under contract and not available for purchase.
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if property.latitude and property.longitude %}
+<script>
+    function initMap() {
+        const location = { 
+            lat: {{ property.latitude }},
+            lng: {{ property.longitude }}
+        };
+        
+        const map = new google.maps.Map(document.getElementById("map"), {
+            zoom: 15,
+            center: location,
+            mapId: '{{ config.GOOGLE_MAPS_MAP_ID }}'
+        });
+        
+        const marker = new google.maps.Marker({
+            position: location,
+            map: map,
+        });
+    }
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ config.GOOGLE_MAPS_API_KEY }}&callback=initMap" async defer></script>
+{% endif %}
+{% endblock %}

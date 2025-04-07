@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Recommended Properties{% endblock %}
+
+{% block head %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Recommended Properties For You</h2>
+    
+    <div class="alert alert-info">
+        <i class="fas fa-lightbulb"></i> Our AI-powered recommendation system analyzes your preferences, browsing history, and similar users' interests to find properties that match your needs.
+    </div>
+    
+    {% if properties %}
+        <div class="row">
+            <div class="col-md-7">
+                <div class="row">
+                    {% for property in properties %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100 property-card">
+                            {% if property.image_url %}
+                            <img src="{{ property.image_url }}" class="card-img-top" alt="{{ property.title }}">
+                            {% endif %}
+                            <div class="card-body">
+                                <h5 class="card-title">{{ property.title }}</h5>
+                                <p class="text-muted mb-2">
+                                    <i class="fas fa-map-marker-alt"></i> {{ property.location }}
+                                </p>
+                                <div class="property-features mb-3">
+                                    {% if property.bedrooms %}
+                                    <span class="me-3"><i class="fas fa-bed"></i> {{ property.bedrooms }} Beds</span>
+                                    {% endif %}
+                                    {% if property.bathrooms %}
+                                    <span class="me-3"><i class="fas fa-bath"></i> {{ property.bathrooms }} Baths</span>
+                                    {% endif %}
+                                    <span><i class="fas fa-ruler-combined"></i> {{ property.area }} {{ property.area_unit }}</span>
+                                </div>
+                                <p class="card-text">{{ property.description[:100] }}...</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="text-primary mb-0"><i class="fas fa-rupee-sign"></i> {{ "{:,.2f}".format(property.price) }}</h5>
+                                    <a href="{{ url_for('property.details', id=property.id) }}" 
+                                       class="btn btn-outline-primary">View Details</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Properties Near You</h5>
+                        <div id="map" style="height: 600px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i> We don't have enough information to make personalized recommendations yet. 
+            <a href="{{ url_for('user.preferences') }}">Update your preferences</a> or browse more properties to help us understand what you're looking for.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize map
+    const map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 12,
+        center: { lat: {{ current_user.preferred_latitude or 0 }}, lng: {{ current_user.preferred_longitude or 0 }} }
+    });
+    
+    // Add user location marker
+    new google.maps.Marker({
+        position: { lat: {{ current_user.preferred_latitude or 0 }}, lng: {{ current_user.preferred_longitude or 0 }} },
+        map: map,
+        title: 'Your preferred location',
+        icon: {
+            url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+        }
+    });
+    
+    // Add property markers
+    {% for property in properties %}
+        {% if property.latitude and property.longitude %}
+        new google.maps.Marker({
+            position: { lat: {{ property.latitude }}, lng: {{ property.longitude }} },
+            map: map,
+            title: '{{ property.title }}',
+            animation: google.maps.Animation.DROP
+        });
+        {% endif %}
+    {% endfor %}
+});
+</script>
+{% endblock %} 

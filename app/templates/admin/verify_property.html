@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}Verify Property - {{ property.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Verify Property</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Admin Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin.manage_properties') }}">Manage Properties</a></li>
+                    <li class="breadcrumb-item active">Verify Property</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Property Details -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Property Details</h4>
+                </div>
+                <div class="card-body">
+                    <h3>{{ property.title }}</h3>
+                    <p class="text-muted">
+                        <i class="fas fa-map-marker-alt"></i> {{ property.location }}
+                    </p>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>Price:</strong> ₹{{ "{:,.2f}".format(property.price) }}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Type:</strong> {{ property.property_type|title }}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Area:</strong> {{ property.area }} sq.ft.
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        {% if property.bedrooms %}
+                        <div class="col-md-4">
+                            <strong>Bedrooms:</strong> {{ property.bedrooms }}
+                        </div>
+                        {% endif %}
+                        
+                        {% if property.bathrooms %}
+                        <div class="col-md-4">
+                            <strong>Bathrooms:</strong> {{ property.bathrooms }}
+                        </div>
+                        {% endif %}
+                        
+                        {% if property.total_floors %}
+                        <div class="col-md-4">
+                            <strong>Total Floors:</strong> {{ property.total_floors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Description</h5>
+                        <p>{{ property.description }}</p>
+                    </div>
+                    
+                    {% if property.latitude and property.longitude %}
+                    <div class="mb-4">
+                        <h5>Location</h5>
+                        <div id="map" style="height: 300px;"></div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Seller Information</h4>
+                </div>
+                <div class="card-body">
+                    {% set seller = property.owner %}
+                    <p><strong>Name:</strong> {{ seller.username }}</p>
+                    <p><strong>Email:</strong> {{ seller.email }}</p>
+                    {% if seller.phone_number %}
+                    <p><strong>Phone:</strong> {{ seller.phone_number }}</p>
+                    {% endif %}
+                    <p><strong>Verified Seller:</strong> 
+                        {% if seller.verified_seller %}
+                        <span class="badge bg-success">Yes</span>
+                        {% else %}
+                        <span class="badge bg-warning">No</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Verification</h4>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('admin.verify_property', id=property.id) }}" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <label class="form-label">Verification Status</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="verification" id="approve" value="approve">
+                                <label class="form-check-label" for="approve">
+                                    Approve Property
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="verification" id="reject" value="reject">
+                                <label class="form-check-label" for="reject">
+                                    Reject Property
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="feedback" class="form-label">Feedback (optional)</label>
+                            <textarea class="form-control" id="feedback" name="feedback" rows="3" placeholder="Provide feedback to the seller"></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">Submit Verification</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Property Images -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Property Images</h4>
+        </div>
+        <div class="card-body">
+            {% if property.images %}
+            <div id="propertyImageCarousel" class="carousel slide mb-4" data-bs-ride="carousel">
+                <div class="carousel-indicators">
+                    {% for image in property.images %}
+                    <button type="button" data-bs-target="#propertyImageCarousel" data-bs-slide-to="{{ loop.index0 }}" 
+                            {% if loop.first %}class="active"{% endif %}></button>
+                    {% endfor %}
+                </div>
+                <div class="carousel-inner">
+                    {% for image in property.images %}
+                    <div class="carousel-item {% if loop.first %}active{% endif %}">
+                        <img src="{{ image.url }}" class="d-block w-100" alt="Property Image">
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if property.images|length > 1 %}
+                <button class="carousel-control-prev" type="button" data-bs-target="#propertyImageCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#propertyImageCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+                {% endif %}
+            </div>
+            
+            <div class="row">
+                {% for image in property.images %}
+                <div class="col-md-3 mb-3">
+                    <div class="card">
+                        <img src="{{ image.url }}" class="card-img-top" alt="Property Image">
+                        <div class="card-body">
+                            <p class="card-text">
+                                {% if image.is_primary %}
+                                <span class="badge bg-primary">Primary Image</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-warning">No images uploaded for this property.</div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Property Documents -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Property Documents</h4>
+        </div>
+        <div class="card-body">
+            {% if property.documents %}
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Document Type</th>
+                            <th>Uploaded On</th>
+                            <th>Actions</th>
+                            <th>Verification</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for document in property.documents %}
+                        <tr>
+                            <td>{{ document.document_type|title }}</td>
+                            <td>{{ document.created_at.strftime('%d %b %Y') }}</td>
+                            <td>
+                                <a href="{{ document.url }}" class="btn btn-sm btn-info" target="_blank">
+                                    <i class="fas fa-eye"></i> View Document
+                                </a>
+                            </td>
+                            <td>
+                                <form action="{{ url_for('admin.verify_document', id=document.id) }}" method="post">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="verification" id="verify_{{ document.id }}" value="verify" {% if document.is_verified %}checked{% endif %}>
+                                        <label class="form-check-label" for="verify_{{ document.id }}">Verify</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="verification" id="reject_{{ document.id }}" value="reject" {% if not document.is_verified %}checked{% endif %}>
+                                        <label class="form-check-label" for="reject_{{ document.id }}">Reject</label>
+                                    </div>
+                                    <div class="mt-2">
+                                        <input type="text" class="form-control form-control-sm" name="feedback" placeholder="Feedback (optional)" value="{{ document.admin_feedback or '' }}">
+                                    </div>
+                                    <button type="submit" class="btn btn-sm btn-primary mt-2">Save</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-warning">No documents uploaded for this property.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+{% if property.latitude and property.longitude %}
+function initMap() {
+    const propertyLocation = { lat: {{ property.latitude }}, lng: {{ property.longitude }} };
+    const map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 15,
+        center: propertyLocation,
+    });
+    
+    const marker = new google.maps.Marker({
+        position: propertyLocation,
+        map: map,
+        title: "{{ property.title }}"
+    });
+}
+{% endif %}
+</script>
+
+{% if property.latitude and property.longitude %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ config.GOOGLE_MAPS_API_KEY }}&callback=initMap&libraries=places&v=weekly" async></script>
+{% endif %}
+{% endblock %} 

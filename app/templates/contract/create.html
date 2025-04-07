@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Create Contract - {{ property.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card shadow">
+        <div class="card-body">
+            <h2 class="mb-4">Create Contract for {{ property.title }}</h2>
+            
+            <form method="POST" id="contractForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-3">
+                    <label class="form-label">Sale Price</label>
+                    <input type="number" name="price" id="price" class="form-control" 
+                           value="{{ property.price }}" required
+                           min="100000" step="1000">
+                    <div class="invalid-feedback" id="priceError" style="display: none;"></div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Advance Payment Amount</label>
+                    <input type="number" name="advance_payment" id="advancePayment" class="form-control" required
+                           step="1000">
+                    <div class="invalid-feedback" id="advancePaymentError" style="display: none;"></div>
+                    <small class="text-muted">Minimum: 10% of sale price</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Payment Deadline</label>
+                    <input type="date" name="payment_deadline" id="paymentDeadline" class="form-control" required>
+                    <div class="invalid-feedback" id="deadlineError" style="display: none;"></div>
+                    <small class="text-muted">Minimum deadline: 15 days from today</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Contract Terms</label>
+                    <textarea name="terms" id="terms" class="form-control" rows="10" required>
+1. The Seller agrees to sell and the Buyer agrees to buy the Property described above.
+2. The total purchase price is {{ "{:,.2f}".format(property.price) }} INR.
+3. The Buyer agrees to pay an advance payment of [Amount] INR.
+4. The advance payment must be made by the specified deadline.
+5. This contract is subject to both parties' acceptance.
+                    </textarea>
+                    <div class="invalid-feedback" id="termsError" style="display: none;"></div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" id="submitBtn" disabled>Create Contract</button>
+                <a href="{{ url_for('user.view_interests') }}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    const formFields = {
+        price: { touched: false },
+        advancePayment: { touched: false },
+        paymentDeadline: { touched: false },
+        terms: { touched: false }
+    };
+
+    const minPrice = 100000;
+    const minDeadline = new Date();
+    minDeadline.setDate(minDeadline.getDate() + 15);
+    
+    function validateField(fieldId) {
+        const field = $(`#${fieldId}`);
+        const error = $(`#${fieldId}Error`);
+        let isValid = true;
+
+        if (!formFields[fieldId].touched) {
+            return true;
+        }
+
+        switch(fieldId) {
+            case 'price':
+                const price = parseFloat(field.val());
+                if (!price || price < minPrice) {
+                    error.text('Minimum price should be ₹1,00,000').show();
+                    field.addClass('is-invalid');
+                    isValid = false;
+                } else {
+                    error.hide();
+                    field.removeClass('is-invalid');
+                }
+                break;
+
+            case 'advancePayment':
+                const advancePayment = parseFloat(field.val());
+                const price2 = parseFloat($('#price').val());
+                const minAdvance = price2 * 0.1;
+                if (!advancePayment || advancePayment < minAdvance || advancePayment > price2) {
+                    error.text(`Advance payment must be between ₹${minAdvance.toLocaleString()} and ₹${price2.toLocaleString()}`).show();
+                    field.addClass('is-invalid');
+                    isValid = false;
+                } else {
+                    error.hide();
+                    field.removeClass('is-invalid');
+                }
+                break;
+
+            case 'paymentDeadline':
+                const deadline = new Date(field.val());
+                if (!field.val() || deadline < minDeadline) {
+                    error.text('Payment deadline must be at least 15 days from today').show();
+                    field.addClass('is-invalid');
+                    isValid = false;
+                } else {
+                    error.hide();
+                    field.removeClass('is-invalid');
+                }
+                break;
+        }
+        return isValid;
+    }
+
+    function validateForm() {
+        let isValid = true;
+        Object.keys(formFields).forEach(fieldId => {
+            if (!validateField(fieldId)) {
+                isValid = false;
+            }
+        });
+        $('#submitBtn').prop('disabled', !isValid);
+    }
+
+    // Mark field as touched on first interaction
+    $('#contractForm input, #contractForm textarea').on('input change', function() {
+        const fieldId = $(this).attr('id');
+        if (formFields[fieldId]) {
+            formFields[fieldId].touched = true;
+            validateField(fieldId);
+            validateForm();
+        }
+    });
+
+    // Set initial min date for deadline
+    $('#paymentDeadline').attr('min', minDeadline.toISOString().split('T')[0]);
+
+    // Initial state - hide all errors
+    Object.keys(formFields).forEach(fieldId => {
+        $(`#${fieldId}Error`).hide();
+    });
+});
+</script>
+{% endblock %} 

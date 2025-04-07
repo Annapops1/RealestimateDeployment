@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+
+<div class="chat-icon" id="chatIcon" onclick="toggleChat()">
+    <i class="fas fa-robot"></i>
+</div>
+
+<div class="chat-widget" id="chatWidget" style="display: none;">
+    <div class="chat-header">
+        <h5>RealEstimate AI Assistant</h5>
+        <button class="btn-minimize" onclick="toggleChat()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="chat-body">
+        <div class="chat-messages" id="chatMessages">
+            <!-- Initial message will be set by JavaScript -->
+        </div>
+    </div>
+    <div class="chat-footer">
+        <input type="text" id="chatInput" placeholder="Ask about properties, features, or get help..." onkeypress="if(event.key === 'Enter') sendMessage()">
+        <button class="send-button" onclick="sendMessage()">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script> 

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Pending Properties{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Pending Properties</h2>
+    
+    {% if properties %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Location</th>
+                    <th>Price</th>
+                    <th>Seller</th>
+                    <th>Added On</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for property in properties %}
+                <tr>
+                    <td>{{ property.title }}</td>
+                    <td>{{ property.location }}</td>
+                    <td>₹{{ "{:,.2f}".format(property.price) }}</td>
+                    <td>{{ property.owner.username }}</td>
+                    <td>{{ property.created_at.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        <a href="{{ url_for('admin.verify_property', id=property.id) }}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-check-circle"></i> Verify
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">No pending properties to verify.</div>
+    {% endif %}
+</div>
+{% endblock %} 

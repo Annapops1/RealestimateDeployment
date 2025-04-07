@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title text-center mb-4">Register as Property Owner/Seller</h3>
+                    
+                    <form method="POST" class="auth-form" id="sellerRegisterForm" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="user_type" value="seller">
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" class="form-control" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Company Name (Optional)</label>
+                            <input type="text" class="form-control" name="company_name">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">License Number (Optional)</label>
+                            <input type="text" class="form-control" name="license_number">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" name="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 mb-3">Register as Seller</button>
+                        <a href="{{ url_for('google.login') }}" class="btn btn-danger w-100">Sign in with Google</a>
+                    </form>
+                    
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('auth.login') }}">Already have an account? Login</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

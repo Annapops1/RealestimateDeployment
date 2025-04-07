@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}RealEstiMate - Home{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section parallax-bg">
+    <div class="overlay"></div>
+    <div class="container">
+        <div class="hero-content text-center">
+            <h1 class="display-3 mb-4 fade-in">Find Your Dream Home</h1>
+            <p class="lead mb-4 fade-in">Discover the perfect property that matches your lifestyle</p>
+            <div class="hero-buttons fade-in">
+                {% if not current_user.is_authenticated %}
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg me-3">
+                        <i class="fas fa-user-plus"></i> Register as Buyer
+                    </a>
+                    <a href="{{ url_for('auth.seller_register') }}" class="btn btn-success btn-lg">
+                        <i class="fas fa-home"></i> Register as Seller
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Services Section -->
+<section class="services-section py-5">
+    <div class="container">
+        <h2 class="text-center mb-5 section-title">Our Services</h2>
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="service-card text-center">
+                    <i class="fas fa-search fa-3x mb-3 text-primary"></i>
+                    <h3>Find Properties</h3>
+                    <p>Browse through our curated list of properties that match your preferences</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="service-card text-center">
+                    <i class="fas fa-map-marked-alt fa-3x mb-3 text-primary"></i>
+                    <h3>Location Based</h3>
+                    <p>Find properties in your preferred locations with our interactive map</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="service-card text-center">
+                    <i class="fas fa-calculator fa-3x mb-3 text-primary"></i>
+                    <h3>Smart Estimates</h3>
+                    <p>Get accurate property valuations based on market trends</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container mt-4">
+    {% if current_user.is_authenticated and current_user.user_type == 'buyer' and recommended_properties %}
+    <section class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3>AI-Powered Recommendations For You</h3>
+            <div class="recommendation-info">
+                <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#recommendationInfoModal">
+                    <i class="fas fa-info-circle"></i> How it works
+                </button>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-8">
+                <div class="row">
+                    {% for property in recommended_properties %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100 property-card">
+                            {% if property.get_primary_image() %}
+                            <img src="{{ property.get_primary_image().url }}" class="card-img-top" alt="{{ property.title }}">
+                            {% else %}
+                            <img src="{{ url_for('static', filename='images/default-property.jpg') }}" class="card-img-top" alt="{{ property.title }}">
+                            {% endif %}
+                            <div class="card-body">
+                                <h5 class="card-title">{{ property.title }}</h5>
+                                <p class="text-muted mb-2">
+                                    <i class="fas fa-map-marker-alt"></i> {{ property.location }}
+                                </p>
+                                <div class="property-features mb-3">
+                                    {% if property.bedrooms %}
+                                    <span class="me-3"><i class="fas fa-bed"></i> {{ property.bedrooms }} Beds</span>
+                                    {% endif %}
+                                    {% if property.bathrooms %}
+                                    <span class="me-3"><i class="fas fa-bath"></i> {{ property.bathrooms }} Baths</span>
+                                    {% endif %}
+                                    <span><i class="fas fa-ruler-combined"></i> {{ property.area }} {{ property.area_unit }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="text-primary mb-0"><i class="fas fa-rupee-sign"></i> {{ "{:,.2f}".format(property.price) }}</h5>
+                                    <a href="{{ url_for('property.details', id=property.id) }}" class="btn btn-primary">View Details</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Properties Near You</h5>
+                        <div id="map" style="height: 400px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    {% if current_user.is_authenticated and current_user.user_type == 'buyer' %}
+    <section>
+        <h3 class="mb-4">All Properties</h3>
+        <div class="row">
+            {% for property in properties %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 property-card">
+                    {% if property.get_primary_image() %}
+                    <img src="{{ property.get_primary_image().url }}" class="card-img-top" alt="{{ property.title }}">
+                    {% else %}
+                    <img src="{{ url_for('static', filename='images/default-property.jpg') }}" class="card-img-top" alt="{{ property.title }}">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ property.title }}</h5>
+                        <p class="text-muted mb-2">
+                            <i class="fas fa-map-marker-alt"></i> {{ property.location }}
+                        </p>
+                        <div class="property-features mb-3">
+                            {% if property.bedrooms %}
+                            <span class="me-3"><i class="fas fa-bed"></i> {{ property.bedrooms }} Beds</span>
+                            {% endif %}
+                            {% if property.bathrooms %}
+                            <span class="me-3"><i class="fas fa-bath"></i> {{ property.bathrooms }} Baths</span>
+                            {% endif %}
+                            <span><i class="fas fa-ruler-combined"></i> {{ property.area }} {{ property.area_unit }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="text-primary mb-0"><i class="fas fa-rupee-sign"></i> {{ "{:,.2f}".format(property.price) }}</h5>
+                            <a href="{{ url_for('property.details', id=property.id) }}" class="btn btn-primary">View Details</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+
+<!-- Recommendation Info Modal -->
+<div class="modal fade" id="recommendationInfoModal" tabindex="-1" aria-labelledby="recommendationInfoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="recommendationInfoModalLabel">How Our AI Recommendations Work</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Our advanced AI-powered recommendation system uses multiple techniques to find properties that match your preferences:</p>
+                <ul>
+                    <li><strong>Content-Based Filtering:</strong> Analyzes properties you've shown interest in to find similar ones</li>
+                    <li><strong>Collaborative Filtering:</strong> Identifies properties liked by users with similar preferences</li>
+                    <li><strong>Matrix Factorization:</strong> Uses machine learning to discover hidden patterns in user-property interactions</li>
+                    <li><strong>Location-Based:</strong> Finds properties near your preferred locations</li>
+                </ul>
+                <p>The more you interact with properties, the better our recommendations become!</p>
+                <p class="text-muted small">Our system updates recommendations daily to ensure you see the most relevant properties.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it!</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if current_user.is_authenticated and current_user.user_type == 'buyer' %}
+<div class="d-flex justify-content-center mt-4">
+    <a href="{{ url_for('user.interests') }}" class="btn btn-outline-primary">
+        <i class="fas fa-heart"></i> View My Interests
+    </a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% if current_user.is_authenticated and current_user.user_type == 'buyer' and recommended_properties %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap" async defer></script>
+<script>
+function initMap() {
+    // Initialize map
+    const map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 12,
+        center: { lat: {{ current_user.preferred_latitude or 0 }}, lng: {{ current_user.preferred_longitude or 0 }} }
+    });
+    
+    // Add user location marker
+    new google.maps.Marker({
+        position: { lat: {{ current_user.preferred_latitude or 0 }}, lng: {{ current_user.preferred_longitude or 0 }} },
+        map: map,
+        title: 'Your preferred location',
+        icon: {
+            url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+        }
+    });
+    
+    // Add property markers
+    {% for property in recommended_properties %}
+        {% if property.latitude and property.longitude %}
+        new google.maps.Marker({
+            position: { lat: {{ property.latitude }}, lng: {{ property.longitude }} },
+            map: map,
+            title: '{{ property.title }}',
+            animation: google.maps.Animation.DROP
+        });
+        {% endif %}
+    {% endfor %}
+}
+</script>
+{% endif %}
+{% endblock %} 
