@@ -169,10 +169,12 @@
                                            class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-comments"></i> Chat
                                         </a>
+                                        {% if not interest.property.has_active_contract() %}
                                         <button onclick="confirmRemoveInterest({{ interest.property_id }})" 
                                                 class="btn btn-sm btn-outline-danger">
                                             <i class="fas fa-times"></i> Remove Interest
                                         </button>
+                                        {% endif %}
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -188,21 +190,7 @@
     </div>
 </div>
 
-<!-- Add this in the dashboard sidebar or navigation section -->
-<div class="list-group mb-4">
-    <a href="{{ url_for('user.dashboard') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'user.dashboard' %}active{% endif %}">
-        <i class="fas fa-tachometer-alt"></i> Dashboard
-    </a>
-    <a href="{{ url_for('user.wishlist') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'user.wishlist' %}active{% endif %}">
-        <i class="fas fa-bookmark"></i> Wishlist
-    </a>
-    <a href="{{ url_for('user.interests') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'user.interests' %}active{% endif %}">
-        <i class="fas fa-heart"></i> My Interests
-    </a>
-    <a href="{{ url_for('user.profile') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'user.profile' %}active{% endif %}">
-        <i class="fas fa-user-cog"></i> Profile Settings
-    </a>
-</div>
+
 {% endblock %}
 
 {% block scripts %}
